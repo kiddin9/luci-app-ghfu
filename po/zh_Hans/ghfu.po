@@ -124,6 +124,12 @@ msgstr "当前系统已是最新版本"
 msgid "New version available"
 msgstr "新版本可用"
 
+msgid "Upgrade Now"
+msgstr "前往更新"
+
+msgid "Close"
+msgstr "关闭"
+
 msgid "Formal Release"
 msgstr "正式版"
 
