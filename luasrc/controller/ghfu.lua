@@ -1177,7 +1177,7 @@ function index()
         return
     end
 
-    entry({"admin", "system", "ghfu"}, call("action_index"), _("System Online Upgrade"), 65)
+    entry({"admin", "system", "ghfu"}, call("action_index"), _("System Online Upgrade"), 2)
     entry({"admin", "system", "ghfu", "status"}, call("action_status")).leaf = true
     entry({"admin", "system", "ghfu", "local_status"}, call("action_local_status")).leaf = true
     entry({"admin", "system", "ghfu", "sysversion_check"}, call("action_sysversion_check")).leaf = true
