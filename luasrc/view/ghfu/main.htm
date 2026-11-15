@@ -1,7 +1,7 @@
 <!--
 SPDX-License-Identifier: GPL-3.0-only
-Copyright (C) 2026 smallprogram
-Repository: https://github.com/smallprogram/luci-app-ghfu
+Copyright (C) 2026 smallprogram & Kiddin'
+Adapted exclusively for https://dl.openwrt.ai/firmware with built-in firmware filtering, auto-selection & flash.js validation
 -->
 
 <%+header%>
@@ -69,7 +69,6 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         --ghfu-input-ro-bg:   rgba(148, 163, 184, 0.05);
     }
 
-    /* ── 组件样式（全部使用CSS变量）─────────────────────── */
     #ghfu-root {
         max-width: none;
         margin: 0;
@@ -89,8 +88,25 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
 
     #ghfu-root .ghfu-subtitle {
         color: var(--ghfu-text-muted);
-        margin: 0 0 14px;
+        margin: 0 0 12px;
         font-size: 12px;
+    }
+
+    .ghfu-alert-banner {
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin: 0 0 12px;
+        font-size: 13px;
+        line-height: 1.5;
+        border: 1px solid rgba(245, 158, 11, 1);
+        background: rgba(245, 158, 11, 0.12);
+        color: var(--ghfu-warn);
+    }
+
+    .ghfu-alert-banner a {
+        color: var(--ghfu-accent);
+        text-decoration: underline;
+        font-weight: 700;
     }
 
     #ghfu-root .cbi-value-title {
@@ -119,6 +135,9 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         padding: 16px;
         box-shadow: var(--ghfu-card-shadow), 0 6px 18px rgba(15, 23, 42, 0.08);
         transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
     }
 
     .ghfu-card:hover {
@@ -146,57 +165,34 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         margin-bottom: 0;
     }
 
-    .ghfu-card-basic .cbi-value {
-        display: grid;
-        grid-template-columns: 150px minmax(0, 1fr);
-        gap: 10px;
-        align-items: center;
-    }
-
-    .ghfu-card-basic .cbi-value-title {
-        margin: 0;
-        text-align: left;
-    }
-
-    .ghfu-card-basic .cbi-value-field,
-    .ghfu-card-basic .cbi-input-text {
-        width: 100%;
-        min-width: 0;
-        box-sizing: border-box;
-    }
-
-    .ghfu-card-status { grid-column: 1 / span 5; grid-row: 1; }
-    .ghfu-card-basic { grid-column: 6 / span 5; grid-row: 1; }
-    .ghfu-card-log { grid-column: 1 / span 6; grid-row: 2; }
-    .ghfu-card-assets { grid-column: 7 / span 4; grid-row: 2; }
+    /* Row 1: Left = Status (5 cols), Right = Available Firmware (5 cols) */
+    .ghfu-card-status    { grid-column: 1 / span 5; grid-row: 1; }
+    .ghfu-card-assets    { grid-column: 6 / span 5; grid-row: 1; }
+    /* Row 2: Left = Execution Logs (6 cols), Right = updatelogs.txt Changelog (4 cols) */
+    .ghfu-card-log       { grid-column: 1 / span 6; grid-row: 2; }
+    .ghfu-card-changelog { grid-column: 7 / span 4; grid-row: 2; }
 
     .ghfu-card-log,
-    .ghfu-card-assets {
-        min-height: 600px;
-        height: 600px;
-        display: flex;
-        flex-direction: column;
-        box-sizing: border-box;
+    .ghfu-card-changelog {
+        min-height: 520px;
+        height: 520px;
     }
 
     .ghfu-card-log > .cbi-value-field,
-    .ghfu-card-assets > .cbi-value-field {
+    .ghfu-card-assets > .cbi-value-field,
+    .ghfu-card-changelog > .cbi-value-field {
         flex: 1 1 auto;
         min-height: 0;
         display: flex;
-    }
-
-    .ghfu-card-log > .cbi-value-field {
         flex-direction: column;
-    }
-
-    .ghfu-card-assets > .cbi-value-field {
-        flex-direction: column;
+        width: 100% !important;
+        box-sizing: border-box;
     }
 
     #ghfu_status {
         width: 100%;
         max-width: 100%;
+        flex: 1 1 auto;
         box-sizing: border-box;
         border: 1px solid var(--ghfu-border-status);
         border-radius: 8px;
@@ -214,6 +210,51 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         border: 1px solid transparent;
         background: rgba(37, 99, 235, 0.08);
         color: var(--ghfu-text-status);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .ghfu-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.4;
+        white-space: nowrap;
+    }
+
+    .ghfu-badge-formal {
+        background: rgba(22, 163, 74, 0.16);
+        color: var(--ghfu-ok);
+        border: 1px solid rgba(22, 163, 74, 0.35);
+    }
+
+    .ghfu-badge-beta {
+        background: rgba(217, 119, 6, 0.16);
+        color: var(--ghfu-warn);
+        border: 1px solid rgba(217, 119, 6, 0.35);
+    }
+
+    .ghfu-badge-rec {
+        background: rgba(37, 99, 235, 0.14);
+        color: var(--ghfu-accent);
+        border: 1px solid rgba(37, 99, 235, 0.35);
+        margin-left: 6px;
+        font-size: 10.5px;
+        padding: 1px 6px;
+    }
+
+    .ghfu-badge-latest {
+        background: rgba(22, 163, 74, 0.14);
+        color: var(--ghfu-ok);
+        border: 1px solid rgba(22, 163, 74, 0.32);
+        margin-left: 6px;
+        font-size: 10.5px;
+        padding: 1px 6px;
     }
 
     .ghfu-status-grid {
@@ -232,19 +273,18 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         word-break: break-word;
     }
 
-    .ghfu-status-grid .ghfu-status-item:last-child {
-        grid-column: 1 / -1;
-    }
-
     #ghfu_assets {
-        width: 100%;
-        max-width: 100%;
-        max-height: 280px;
-        overflow: auto;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 145px;
+        max-height: 210px;
+        flex: 1 1 auto;
+        overflow-y: auto;
         border: 1px solid var(--ghfu-border-assets);
         border-radius: 8px;
         padding: 4px 6px;
         background: var(--ghfu-bg-assets);
+        box-sizing: border-box;
     }
 
     #ghfu_assets .ghfu-asset-row {
@@ -290,11 +330,40 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         line-height: 1.4;
     }
 
-    #ghfu_log {
+    #ghfu_updatelogs_box {
         width: 100%;
-        max-width: 100%;
-        min-height: 260px;
-        height: 260px;
+        height: 100%;
+        flex: 1 1 auto;
+        min-height: 0;
+        box-sizing: border-box;
+        border: 1px solid var(--ghfu-border);
+        border-radius: 8px;
+        padding: 12px 14px;
+        overflow-y: auto;
+        background: var(--ghfu-input-ro-bg);
+        color: var(--ghfu-text);
+        font-size: 13px;
+        line-height: 1.6;
+        white-space: pre-line;
+    }
+
+    #ghfu_updatelogs_box a {
+        color: orangered;
+        text-decoration: underline;
+    }
+
+    #ghfu_updatelogs_box h4 {
+        margin: 8px 0 4px;
+        padding-bottom: 0;
+        color: var(--ghfu-text);
+    }
+
+    #ghfu_log {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 0;
+        height: 100%;
+        flex: 1 1 auto;
         display: block;
         box-sizing: border-box;
         border-radius: 8px;
@@ -305,12 +374,6 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         line-height: 1.45;
     }
 
-    .ghfu-status-line { margin: 3px 0; }
-
-    #ghfu_release {
-        background-color: var(--ghfu-input-ro-bg) !important;
-        color: var(--ghfu-text-muted) !important;
-    }
     .ghfu-conclusion-ok   { color: var(--ghfu-ok);   font-weight: 700; }
     .ghfu-conclusion-new  { color: var(--ghfu-new);  font-weight: 700; }
     .ghfu-conclusion-warn { color: var(--ghfu-warn); font-weight: 700; }
@@ -333,19 +396,48 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         color: var(--ghfu-warn);
     }
 
-    #ghfu-root .cbi-page-actions {
-        margin-top: 14px;
-        text-align: right;
-    }
-
     .ghfu-card-actions {
         margin-top: 14px;
         padding-top: 12px;
         border-top: 1px solid var(--ghfu-divider);
         display: flex;
         flex-wrap: wrap;
+        align-items: center;
         justify-content: flex-end;
         gap: 8px;
+    }
+
+    .ghfu-upgrade-bar {
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .ghfu-upgrade-checks {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .ghfu-upgrade-checks label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: normal;
+        color: var(--ghfu-text);
+        margin: 0;
+        user-select: none;
+    }
+
+    .ghfu-upgrade-checks input[type="checkbox"] {
+        margin: 0;
+        width: 16px;
+        height: 16px;
+        flex: 0 0 16px;
+        accent-color: var(--ghfu-accent);
+        cursor: pointer;
     }
 
     .ghfu-card-actions .cbi-button {
@@ -360,7 +452,7 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
 
     .ghfu-card-assets .cbi-value {
         display: grid;
-        grid-template-columns: 140px minmax(0, 1fr);
+        grid-template-columns: 110px minmax(0, 1fr);
         gap: 10px;
         align-items: center;
     }
@@ -368,72 +460,6 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
     .ghfu-card-assets .cbi-value-title {
         margin: 0;
         text-align: left;
-    }
-
-    .ghfu-card-assets .cbi-value-field,
-    .ghfu-card-log .cbi-value-field {
-        width: 100%;
-        min-width: 0;
-    }
-
-    .ghfu-card-assets > .cbi-value-field,
-    .ghfu-card-log > .cbi-value-field {
-        display: flex !important;
-        flex-direction: column !important;
-        width: 100% !important;
-        box-sizing: border-box;
-    }
-
-    .ghfu-card-assets #ghfu_assets,
-    .ghfu-card-log #ghfu_log {
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box;
-    }
-
-    .ghfu-card-log #ghfu_log {
-        flex: 1 1 auto;
-        min-height: 0;
-        height: 100%;
-    }
-
-    .ghfu-card-assets #ghfu_assets {
-        flex: 1 1 auto;
-        min-height: 0;
-        max-height: none;
-        height: 100%;
-    }
-
-    .ghfu-basic-toggle-row {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        flex-wrap: wrap;
-        line-height: 1;
-    }
-
-    .ghfu-basic-toggle-row div {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        font-weight: normal;
-        color: var(--ghfu-text);
-        line-height: 1;
-        white-space: nowrap;
-    }
-
-    .ghfu-basic-toggle-row input[type="checkbox"] {
-        margin: 0;
-        width: 16px;
-        height: 16px;
-        flex: 0 0 16px;
-        display: block;
-        transform: translateY(-1px);
-    }
-
-    .ghfu-basic-toggle-row span {
-        line-height: 1;
     }
 
     #ghfu-root .cbi-button {
@@ -452,13 +478,15 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         pointer-events: auto;
     }
 
-    #ghfu_upgrade {
+    #ghfu_upgrade,
+    #ghfu_val_continue {
         background: linear-gradient(135deg, var(--ghfu-danger) 0%, #f97316 100%) !important;
         border-color: var(--ghfu-danger) !important;
         color: #ffffff !important;
     }
 
-    #ghfu_upgrade:not(:disabled):hover {
+    #ghfu_upgrade:not(:disabled):hover,
+    #ghfu_val_continue:not(:disabled):hover {
         filter: brightness(1.12);
     }
 
@@ -468,17 +496,17 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         }
 
         .ghfu-card-status,
-        .ghfu-card-basic,
+        .ghfu-card-assets,
         .ghfu-card-log,
-        .ghfu-card-assets {
+        .ghfu-card-changelog {
             grid-column: 1;
             grid-row: auto;
         }
 
         .ghfu-card-log,
-        .ghfu-card-assets {
-            height: auto;
-            min-height: 0;
+        .ghfu-card-changelog {
+            height: 400px;
+            min-height: 320px;
         }
     }
 
@@ -489,7 +517,8 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
             grid-template-columns: 1fr;
         }
 
-        .ghfu-card-actions {
+        .ghfu-card-actions,
+        .ghfu-upgrade-bar {
             justify-content: stretch;
         }
 
@@ -497,14 +526,14 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
             width: 100%;
         }
 
-        .ghfu-card-basic .cbi-value,
         .ghfu-card-assets .cbi-value {
             grid-template-columns: 1fr;
             align-items: stretch;
         }
     }
 
-    #ghfu-upgrade-modal {
+    #ghfu-upgrade-modal,
+    #ghfu-validate-modal {
         display: none;
         position: fixed;
         inset: 0;
@@ -528,18 +557,27 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
     }
 
     body.ghfu-upgrade-lock #ghfu-upgrade-modal,
-    body.ghfu-upgrade-lock #ghfu-upgrade-modal * {
+    body.ghfu-upgrade-lock #ghfu-upgrade-modal *,
+    body.ghfu-upgrade-lock #ghfu-validate-modal,
+    body.ghfu-upgrade-lock #ghfu-validate-modal * {
         pointer-events: auto !important;
     }
 
     .ghfu-modal-box {
         background: var(--ghfu-modal-bg);
         border-radius: 14px;
-        padding: 36px 48px;
+        padding: 32px 36px;
         text-align: center;
         box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
-        max-width: 420px;
-        width: 90%;
+        max-width: 460px;
+        width: 92%;
+        box-sizing: border-box;
+    }
+
+    .ghfu-validate-box {
+        max-width: 540px;
+        text-align: left;
+        padding: 26px 30px;
     }
 
     .ghfu-modal-spinner {
@@ -572,48 +610,95 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         line-height: 1.6;
     }
 
-    #ghfu-ext-modal {
+    .ghfu-modal-actions {
+        margin-top: 18px;
         display: none;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: var(--ghfu-overlay);
-        z-index: 9999;
-        align-items: center;
         justify-content: center;
     }
 
-    #ghfu-ext-modal.ghfu-modal-open {
+    #ghfu-upgrade-modal.ghfu-modal-countdown .ghfu-modal-actions {
         display: flex;
     }
 
-    #ghfu-ext-modal .ghfu-modal-box {
-        max-width: 440px;
-        text-align: left;
+    .ghfu-val-alert {
+        border-radius: 8px;
+        padding: 12px 14px;
+        margin: 12px 0;
+        border: 1px solid rgba(239, 68, 68, 0.45);
+        background: rgba(239, 68, 68, 0.10);
+        color: var(--ghfu-new);
+        font-size: 13px;
+        line-height: 1.55;
     }
 
-    #ghfu_ext_textarea {
-        width: 100%;
-        height: 200px;
-        box-sizing: border-box;
-        font-family: "Cascadia Mono", "JetBrains Mono", "Consolas", monospace;
-        font-size: 13px;
-        border: 1px solid var(--ghfu-border);
-        border-radius: 8px;
+    .ghfu-val-code {
+        margin-top: 8px;
         padding: 8px 10px;
+        border-radius: 6px;
         background: var(--ghfu-log-bg);
         color: var(--ghfu-log-text);
-        resize: vertical;
-        margin-top: 6px;
+        font-family: "Cascadia Mono", "JetBrains Mono", "Consolas", monospace;
+        font-size: 12px;
+        max-height: 140px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
     }
 
-    .ghfu-ext-modal-actions {
+    .ghfu-val-meta {
+        margin: 10px 0;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--ghfu-border);
+        background: var(--ghfu-input-ro-bg);
+        color: var(--ghfu-modal-text);
+        font-size: 12px;
+        line-height: 1.5;
+        word-break: break-all;
+    }
+
+    .ghfu-val-force-row {
+        margin: 12px 0 6px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px dashed var(--ghfu-border);
+        background: var(--ghfu-input-ro-bg);
+    }
+
+    .ghfu-val-force-row label {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--ghfu-modal-text);
+    }
+
+    .ghfu-val-force-row input[type="checkbox"] {
+        margin-top: 2px;
+        width: 16px;
+        height: 16px;
+        flex: 0 0 16px;
+        accent-color: var(--ghfu-danger);
+        cursor: pointer;
+    }
+
+    .ghfu-val-force-desc {
+        margin-top: 6px;
+        margin-left: 24px;
+        font-size: 12px;
+        color: var(--ghfu-modal-muted);
+        line-height: 1.5;
+    }
+
+    .ghfu-val-actions {
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px solid var(--ghfu-divider);
         display: flex;
         justify-content: flex-end;
-        gap: 8px;
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 1px solid var(--ghfu-divider);
+        gap: 10px;
     }
 
 </style>
@@ -621,7 +706,14 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
 <div class="cbi-map" id="ghfu-root">
     <h2 id="ghfu_title"></h2>
     <p class="ghfu-subtitle" id="ghfu_subtitle"></p>
+
+    <div id="ghfu_uci_warn" class="ghfu-alert-banner" style="display:none;"></div>
+    <div id="ghfu_custom_part_warn" class="ghfu-alert-banner" style="display:none;">
+        <%:Warning: Custom firmware with modified root partition size should use%> <a target="_blank" href="https://openwrt.ai">openwrt.ai</a> <%:to build custom firmware, otherwise direct online upgrade will reset partitions and lose configuration.%>
+    </div>
+
     <div class="cbi-section ghfu-layout">
+        <!-- 左上：系统与固件状态卡片 -->
         <div class="ghfu-card ghfu-card-status">
             <div class="ghfu-card-title" id="ghfu_status_label"></div>
             <div id="ghfu_status"></div>
@@ -633,51 +725,7 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
             </div>
         </div>
 
-        <div class="ghfu-card ghfu-card-basic">
-            <div class="ghfu-card-title" id="ghfu_basic_title"></div>
-
-            <div class="cbi-value">
-                <label class="cbi-value-title" for="ghfu_repo" id="ghfu_repo_label"></label>
-                <div class="cbi-value-field">
-                    <input id="ghfu_repo" class="cbi-input-text ghfu-wide" type="text" value="smallprogram/OpenWrtAction" />
-                </div>
-            </div>
-
-            <div class="cbi-value">
-                <label class="cbi-value-title" for="ghfu_release" id="ghfu_release_label"></label>
-                <div class="cbi-value-field">
-                    <input id="ghfu_release" class="cbi-input-text ghfu-wide" type="text" readonly="readonly" />
-                </div>
-            </div>
-
-            <div class="cbi-value">
-                <label class="cbi-value-title" for="ghfu_timeout" id="ghfu_timeout_label"></label>
-                <div class="cbi-value-field" style="display:flex;align-items:center;gap:10px;">
-                    <input id="ghfu_timeout" class="cbi-input-text" type="number" min="5" max="300" value="15" style="width:80px;" />
-                    <span id="ghfu_timeout_hint" style="color:var(--ghfu-text-muted);font-size:12px;"></span>
-                </div>
-            </div>
-
-            <div class="cbi-value">
-                <div class="cbi-value-title"></div>
-                <div class="cbi-value-field ghfu-basic-toggle-row">
-                    <div>
-                        <input id="ghfu_keep" type="checkbox" checked="checked" />
-                        <span id="ghfu_keep_label"></span>
-                    </div>
-                    <div>
-                        <input id="ghfu_filter_ext_enabled" type="checkbox" checked="checked" />
-                        <span id="ghfu_filter_ext_label"></span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="ghfu-card-actions">
-                <button class="cbi-button cbi-button-neutral" id="ghfu_ext_config_btn" type="button"></button>
-                <button class="cbi-button cbi-button-action" id="ghfu_basic_save" type="button"></button>
-            </div>
-        </div>
-
+        <!-- 右上：可选固件卡片（底部直接选择保留配置/保留已安装软件包并刷入） -->
         <div class="ghfu-card ghfu-card-assets">
             <div class="ghfu-card-title" id="ghfu_assets_label"></div>
 
@@ -692,36 +740,71 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
                 <div id="ghfu_assets"></div>
             </div>
 
-            <div class="ghfu-card-actions">
+            <div class="ghfu-card-actions ghfu-upgrade-bar">
+                <div class="ghfu-upgrade-checks">
+                    <label>
+                        <input id="ghfu_keep" type="checkbox" checked="checked" />
+                        <span id="ghfu_keep_label"></span>
+                    </label>
+                    <label>
+                        <input id="ghfu_retain_pkg" type="checkbox" />
+                        <span id="ghfu_retain_pkg_label"></span>
+                    </label>
+                </div>
                 <button class="cbi-button cbi-button-apply" id="ghfu_upgrade" type="button" disabled="disabled"></button>
             </div>
         </div>
 
+        <!-- 左下：执行日志卡片 -->
         <div class="ghfu-card ghfu-card-log">
             <div class="ghfu-card-title" id="ghfu_log_label"></div>
             <div class="cbi-value-field">
                 <textarea id="ghfu_log" class="cbi-input-textarea" readonly="readonly"></textarea>
             </div>
         </div>
+
+        <!-- 右下：固件更新日志卡片（updatelogs.txt） -->
+        <div class="ghfu-card ghfu-card-changelog">
+            <div class="ghfu-card-title" id="ghfu_changelog_label"></div>
+            <div class="cbi-value-field">
+                <div id="ghfu_updatelogs_box"></div>
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- 升级倒计时与刷入进度 Modal（倒计时阶段支持随时取消） -->
 <div id="ghfu-upgrade-modal">
     <div class="ghfu-modal-box">
         <div class="ghfu-modal-spinner"></div>
         <div class="ghfu-modal-title" id="ghfu_modal_title"></div>
         <div class="ghfu-modal-msg" id="ghfu_modal_msg"></div>
+        <div class="ghfu-modal-actions">
+            <button class="cbi-button cbi-button-neutral" id="ghfu_countdown_cancel" type="button"></button>
+        </div>
     </div>
 </div>
 
-<div id="ghfu-ext-modal">
-    <div class="ghfu-modal-box">
-        <div class="ghfu-modal-title" id="ghfu_ext_modal_title"></div>
-        <div style="font-size:12px;color:var(--ghfu-modal-muted);margin-top:4px;" id="ghfu_ext_modal_hint"></div>
-        <textarea id="ghfu_ext_textarea"></textarea>
-        <div class="ghfu-ext-modal-actions">
-            <button class="cbi-button cbi-button-neutral" id="ghfu_ext_cancel" type="button"></button>
-            <button class="cbi-button cbi-button-action" id="ghfu_ext_save_btn" type="button"></button>
+<!-- 固件校验不通过警告与强制升级选项 Modal（参考 LuCI flash.js） -->
+<div id="ghfu-validate-modal">
+    <div class="ghfu-modal-box ghfu-validate-box">
+        <div class="ghfu-modal-title" id="ghfu_val_title"></div>
+        <div class="ghfu-val-alert">
+            <div id="ghfu_val_summary"></div>
+            <div class="ghfu-val-code" id="ghfu_val_detail" style="display:none;"></div>
+        </div>
+        <div class="ghfu-val-meta" id="ghfu_val_meta" style="display:none;"></div>
+        <div id="ghfu_val_backup_warn" class="ghfu-alert-banner" style="display:none;margin:10px 0;"></div>
+        <div class="ghfu-val-force-row" id="ghfu_val_force_box">
+            <label>
+                <input type="checkbox" id="ghfu_val_force_chk" />
+                <span id="ghfu_val_force_label"></span>
+            </label>
+            <div class="ghfu-val-force-desc" id="ghfu_val_force_desc"></div>
+        </div>
+        <div class="ghfu-val-actions">
+            <button class="cbi-button cbi-button-neutral" id="ghfu_val_cancel" type="button"></button>
+            <button class="cbi-button cbi-button-apply" id="ghfu_val_continue" type="button" disabled="disabled"></button>
         </div>
     </div>
 </div>
@@ -729,91 +812,99 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
 <script type="text/javascript">
 (function() {
     var I18N = {
-        title: '<%:GitHub Firmware Upgrade%>',
-        subtitle: '<%:Firmware upgrade assistant based on GitHub Release.%>',
-        basicTitle: '<%:Basic Configuration%>',
-        repoLabel: '<%:GitHub Repository%>',
+        title: '<%:System Online Upgrade%>',
+        subtitle: '<%:One-click firmware upgrade assistant powered by Kwrt with automatic device adaptation.%>',
         searchLabel: '<%:Firmware Fuzzy Search%>',
         searchPlaceholder: '<%:Enter keyword to filter firmware names%>',
-        releaseLabel: '<%:Last Updated Firmware%>',
+        lastFlashedLabel: '<%:Last Flashed Firmware%>',
         keepLabel: '<%:Keep Configuration%>',
-        filterExtLabel: '<%:Filter Valid Extensions%>',
-        extConfigBtn: '<%:Valid Extensions%>',
-        extConfigTitle: '<%:Valid Firmware Extensions%>',
-        extConfigHint: '<%:One extension per line (e.g. .img  .img.gz)%>',
-        extConfigCancel: '<%:Cancel%>',
-        extConfigSaveBtn: '<%:Save%>',
-        extConfigSaving: '<%:Saving extensions...%>',
-        extConfigSaved: '<%:Extensions saved%>',
-        statusLabel: '<%:System and Release Status%>',
-        assetsLabel: '<%:Available Firmware%>',
-        assetsLabelWithCount: '<%:Available Firmware (Filtered: %d)%>',
+        retainPkgLabel: '<%:Retain Installed Packages%>',
+        statusLabel: '<%:System and Firmware Status%>',
+        assetsLabelWithCount: '<%:Available Firmware (%d)%>',
         logLabel: '<%:Logs%>',
-        refreshBtn: '<%:Fetch Latest Release%>',
-        upgradeBtn: '<%:Download and Upgrade System%>',
-        waitingStatus: '<%:Waiting to fetch latest release%>',
+        changelogLabel: '<%:Firmware Changelog%>',
+        noChangelog: '<%:No firmware changelog available%>',
+        refreshBtn: '<%:Check Update%>',
+        flashLatestBtn: '<%:Flash this latest firmware%>',
+        reflashLatestBtn: '<%:Already latest version, sure to reflash this version?%>',
+        flashOldBtn: '<%:Sure to flash this older version?%>',
         noMatch: '<%:No matching firmware%>',
-        beginFetch: '<%:Fetching latest release%>',
-        fetchFailed: '<%:Fetch failed%>',
-        requestFailed: '<%:Request failed: %>',
-        latestRelease: '<%:Latest release: %>',
+        beginFetch: '<%:Checking latest firmware%>',
+        fetchFailed: '<%:Check failed%>',
+        requestFailed: '<%:Request failed:%>',
+        latestRelease: '<%:Latest version:%>',
         statusUpdated: '<%:Status updated%>',
-        noNewStop: '<%:No new firmware currently, firmware selection is disabled%>',
-        installTime: '<%:System install time%>',
-        latestRel: '<%:Latest release%>',
+        currentVersion: '<%:Current system version%>',
+        currentDevice: '<%:Current device%>',
+        latestRel: '<%:Latest version%>',
         pubTime: '<%:Published time%>',
-        releaseTotal: '<%:Assets total%>',
-        conclusion: '<%:Conclusion%>',
-        fetchingInProgress: '<%:Fetching in progress%>',
-        fetchGithubReleaseFailed: '<%:Failed to fetch GitHub release%>',
+        releaseTotal: '<%:Firmware count%>',
+        fetchingInProgress: '<%:Checking...%>',
+        fetchFirmwareFailed: '<%:Failed to fetch firmware list%>',
         fetchFieldFailed: '<%:Fetch failed%>',
         chooseFirmware: '<%:Please select firmware to upgrade%>',
         chooseAsset: '<%:Please select a firmware asset%>',
-        beginUpgrade: '<%:Preparing upgrade: %>',
-        cmdStarted: '<%:Upgrade command started, device may reboot soon%>',
-        upgradeReqFailed: '<%:Upgrade request failed: %>',
-        selectedFirmware: '<%:Selected firmware: %>',
-        unknown: '<%:unknown%>',
+        upgradeReqFailed: '<%:Upgrade request failed:%>',
+        selectedFirmware: '<%:Selected firmware:%>',
         backupBtn: '<%:Download Backup%>',
         upgradingTitle: '<%:Upgrading System%>',
-        upgradingMsg: '<%:System is upgrading, please wait. The page will reload automatically when the system comes back online.%>',
-        beginDownload: '<%:Starting download: %>',
-        countdownPrefix: '<%:System upgrade will start in %>',
-        countdownSuffix: '<%: seconds%>',
-        startingUpgrade: '<%:Starting system upgrade...%>',
+        upgradingMsg: '<%:Upgrade successful, Waiting for device...%>',
+        unreachableMsg: '<%:Device unreachable! Still waiting for device...%>',
+        beginDownload: '<%:Starting download:%>',
+        countdownLogMsg: '<%:System upgrade will start in %d seconds%>',
+        startingSystemUpgrade: '<%:Starting system upgrade%>',
+        startingUpgrade: '<%:Flashing...%>',
         countdownLockTitle: '<%:Firmware Download Completed%>',
         countdownLockMsg: '<%:Firmware is ready. System upgrade will start in %d seconds. Please do not leave this page.%>',
-        timeoutLabel: '<%:Fetch Timeout (seconds)%>',
-        timeoutHint: '<%:5 ~ 300 seconds. Limits GitHub API fetch time.%>',
-        saveBasicBtn: '<%:Save Basic Configuration%>',
-        savingBasic: '<%:Saving basic configuration...%>',
-        basicSaved: '<%:Basic configuration saved%>',
-        fetchTimedOut: '<%:Unable to fetch GitHub Release, please check your network connection%>',
-        notesBtn: '<%:Read Latest Release Notes%>',
-        notesUnavailable: '<%:Latest release page URL is unavailable, please fetch latest release again%>',
+        countdownCancelBtn: '<%:Cancel Upgrade%>',
+        countdownCancelledLog: '<%:Upgrade countdown cancelled by user, temporary firmware removed%>',
+        fetchTimedOut: '<%:Unable to fetch firmware list, please check your network connection%>',
+        notesBtn: '<%:Open Firmware Directory%>',
+        notesUnavailable: '<%:Firmware directory URL is unavailable, please check update again%>',
         popupBlocked: '<%:Unable to open a new window. Please allow pop-ups in your browser.%>',
-        fallbackUsedHint: '<%:Latest release assets are not ready yet, using previous release with available firmware.%>',
-        partialAssetsHint: '<%:Latest release partial firmware may still be compiling, waiting to upload, or failed to compile. If your platform is missing, please wait for the next build result.%>',
-        autoFilterMatched: '<%:已自动筛选为上次更新的固件名%s，如果需要更改请删除模糊检索内容%>',
-        autoFilterNoMatch: '<%:最新release中没有固件名称%s，请手动筛选或等待下次仓库编译。%>',
-        businessLocked: '<%:Upgrade workflow is running, please wait until current operation finishes%>'
+        autoFilterMatched: '<%:Automatically selected recommended firmware: %s%>',
+        businessLocked: '<%:Upgrade workflow is running, please wait until current operation finishes%>',
+        formalBadge: '<%:Formal Release%>',
+        betaBadge: '<%:Preview Release%>',
+        recBadge: '<%:Recommended%>',
+        latestBadge: '<%:Latest%>',
+        unsavedUciWarn: '<%:Warning: There are unsaved changes that will get lost on reboot!%>',
+        valTitle: '<%:Firmware Image Check Failed%>',
+        valSummary: '<%:The uploaded image file does not contain a supported format. Make sure that you choose the generic image format for your platform.%>',
+        valForceLabel: '<%:Force upgrade%>',
+        valForceDesc: "<%:Select 'Force upgrade' to flash the image even if the image format check fails. Use only if you are sure that the firmware is correct and meant for your device!%>",
+        valNotForceable: '<%:Force upgrade is disallowed for this image by the system validator.%>',
+        valNoBackupWarn: '<%:The image does not support keeping current configuration; configuration retention will be disabled (-n).%>',
+        valCancelBtn: '<%:Cancel%>',
+        valContinueBtn: '<%:Force Flash%>',
+        valCancelledLog: '<%:Upgrade cancelled by user after firmware check warning%>',
+        sizeLabel: '<%:Size%>',
+        sha256Label: '<%:SHA256%>',
+        invalidJsonResp: '<%:Server returned invalid JSON response%>'
     };
 
+    var BUILTIN_VALID_EXTS = ['.img.gz', '.img', '.bin', '.tar.gz', '.tar', '.itb', '.trx', '.chk', '.dlf', '.ari'];
     var assets = [];
     var selectedAsset = null;
+    var selectedReleaseText = '';
+    var lastFlashedFirmwareText = '';
     var latestReleaseName = '';
     var latestReleaseUrl = '';
+    var latestIsFormal = true;
+    var hasNewUpdate = false;
     var lastInstallEpoch = 0;
+    var currentDeviceInfo = null;
+    var resolvedDevicePath = '';
     var routerTzOffsetMin = null;
     var rebootPollTimer = null;
     var rebootPollAttempts = 0;
-    var rebootPollLimit = 36;
     var rebootSeenOffline = false;
     var upgradeModalActive = false;
     var downloadPollTimer = null;
-    var filterExtEnabled = true;
-    var validExtensions = ['.img', '.img.gz', '.bin', '.tar', '.itb', '.trx', '.chk', '.dlf', '.ari'];
+    var countdownTimer = null;
+    var activeCountdownFwName = '';
     var upgradeWorkflowBusy = false;
+    var pendingValidationCtx = null;
     var appVersion = '<%=app_version or ""%>';
 
     function byId(id) { return document.getElementById(id); }
@@ -825,22 +916,70 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
     }
 
     function updateTitle() {
-        byId('ghfu_title').textContent = appVersion ? (t('title') + ' v' + appVersion) : t('title');
+        byId('ghfu_title').textContent = t('title');
+    }
+
+    function isAssetLatest(asset) {
+        if (!asset) {
+            return true;
+        }
+        if (typeof asset.is_latest === 'boolean') {
+            return asset.is_latest;
+        }
+        if (latestReleaseName && asset.version_tag) {
+            return asset.version_tag === latestReleaseName;
+        }
+        if (latestReleaseName && asset.name) {
+            return String(asset.name).indexOf(latestReleaseName) !== -1;
+        }
+        return true;
+    }
+
+    function updateUpgradeButtonText() {
+        var btn = byId('ghfu_upgrade');
+        if (!btn) return;
+
+        if (!selectedAsset) {
+            btn.textContent = hasNewUpdate ? t('flashLatestBtn') : t('reflashLatestBtn');
+            return;
+        }
+
+        if (!isAssetLatest(selectedAsset)) {
+            btn.textContent = t('flashOldBtn');
+        } else if (hasNewUpdate) {
+            btn.textContent = t('flashLatestBtn');
+        } else {
+            btn.textContent = t('reflashLatestBtn');
+        }
+    }
+
+    function updateWarnings(hasUnsavedUci) {
+        var uciWarn = byId('ghfu_uci_warn');
+        if (uciWarn) {
+            if (hasUnsavedUci) {
+                uciWarn.textContent = t('unsavedUciWarn');
+                uciWarn.style.display = 'block';
+            } else {
+                uciWarn.style.display = 'none';
+            }
+        }
+        var partWarn = byId('ghfu_custom_part_warn');
+        if (partWarn && currentDeviceInfo) {
+            partWarn.style.display = currentDeviceInfo.is_kwrt ? 'none' : 'block';
+        }
     }
 
     function updateConfig(cfg) {
         if (!cfg) { return; }
-        filterExtEnabled = cfg.filter_ext_enabled !== '0';
-        if (cfg.valid_extensions) {
-            var exts = String(cfg.valid_extensions).split(/\s+/).filter(Boolean);
-            if (exts.length > 0) { validExtensions = exts; }
+        if (byId('ghfu_keep')) {
+            byId('ghfu_keep').checked = (cfg.keep_config || '1') === '1';
         }
-        var extEl = byId('ghfu_filter_ext_enabled');
-        if (extEl) { extEl.checked = filterExtEnabled; }
-    }
-
-    function updateFilteredAssetsLabel() {
-        updateAssetsLabel(getVisibleAssets().length);
+        if (byId('ghfu_retain_pkg')) {
+            byId('ghfu_retain_pkg').checked = (cfg.retain_packages || '0') === '1';
+        }
+        if (cfg.selected_release !== undefined) {
+            lastFlashedFirmwareText = cfg.selected_release || '';
+        }
     }
 
     function setDisabled(id, disabled) {
@@ -858,18 +997,13 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
             root.classList.toggle('ghfu-input-locked', busy);
         }
 
-        setDisabled('ghfu_repo', busy);
-        setDisabled('ghfu_release', busy);
-        setDisabled('ghfu_timeout', busy);
         setDisabled('ghfu_keep', busy);
-        setDisabled('ghfu_filter_ext_enabled', busy);
+        setDisabled('ghfu_retain_pkg', busy);
         setDisabled('ghfu_search', busy);
 
-        setDisabled('ghfu_basic_save', busy);
-        setDisabled('ghfu_ext_config_btn', busy);
         setDisabled('ghfu_refresh', busy);
         setDisabled('ghfu_backup', busy);
-        setDisabled('ghfu_upgrade', busy || assets.length === 0);
+        setDisabled('ghfu_upgrade', busy || assets.length === 0 || !selectedAsset);
         setDisabled('ghfu_notes', busy || !latestReleaseUrl);
 
         var radios = byId('ghfu_assets').querySelectorAll('input[type="radio"]');
@@ -924,58 +1058,35 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
             return;
         }
         selectedAsset = asset;
-        byId('ghfu_release').value = (latestReleaseName ? (latestReleaseName + ' / ') : '') + (asset.name || '');
+        selectedReleaseText = (latestReleaseName ? (latestReleaseName + ' / ') : '') + (asset.name || '');
         renderAssets();
+        updateUpgradeButtonText();
         if (!silent) {
-            appendLog(t('selectedFirmware') + (asset.name || ''));
+            appendLog(t('selectedFirmware') + ' ' + (asset.name || ''));
         }
     }
 
-    function applyAutoFirmwareFilter(previousReleaseText) {
-        if (!assets.length) {
-            return;
-        }
-
-        var prevFirmware = extractFirmwareName(previousReleaseText);
-        if (!prevFirmware) {
-            return;
-        }
-
-        byId('ghfu_search').value = prevFirmware;
-        renderAssets();
-
+    function applyAutoFirmwareFilter() {
         var visible = getVisibleAssets();
-        var lowerPrev = prevFirmware.toLowerCase();
-        var exact = visible.filter(function(a) {
-            return String(a.name || '').toLowerCase() === lowerPrev;
-        });
-        var matched = exact.length ? exact : visible.filter(function(a) {
-            return String(a.name || '').toLowerCase().indexOf(lowerPrev) !== -1;
-        });
-
-        if (matched.length > 0) {
-            selectAsset(matched[0], true);
-            appendLog(t('autoFilterMatched').replace('%s', matched[0].name || prevFirmware));
+        if (!visible.length) {
+            selectedAsset = null;
+            updateUpgradeButtonText();
             return;
         }
 
-        appendLog(t('autoFilterNoMatch').replace('%s', prevFirmware));
-        selectedAsset = null;
-        renderAssets();
+        selectAsset(visible[0], true);
+        appendLog(t('autoFilterMatched').replace('%s', visible[0].name));
     }
 
-    /* 检测当前主题是否为暗色，并给 root 元素打标记 */
     function applyTheme() {
         var root = byId('ghfu-root');
         if (!root) return;
         var isDark = false;
 
-        /* 1. 系统媒体查询 */
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             isDark = true;
         }
 
-        /* 2. 常见暗色类名（body / html） */
         if (!isDark) {
             var darkClasses = ['dark', 'is-dark', 'night', 'dark-mode', 'theme-dark', 'luci-dark'];
             var body = document.body;
@@ -989,15 +1100,15 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
             }
         }
 
-        /* 3. data-theme / data-color-scheme 属性 */
         if (!isDark) {
             var dt = document.body.getAttribute('data-theme') ||
                      document.body.getAttribute('data-color-scheme') ||
-                     document.documentElement.getAttribute('data-theme');
+                     document.documentElement.getAttribute('data-theme') ||
+                     document.documentElement.getAttribute('data-argon-mode') ||
+                     document.body.getAttribute('data-argon-mode');
             if (dt && dt.indexOf('dark') !== -1) isDark = true;
         }
 
-        /* 4. 最终兜底：读取 body 实际背景色亮度 */
         if (!isDark) {
             try {
                 var bg = window.getComputedStyle(document.body).backgroundColor;
@@ -1019,35 +1130,34 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
     function initTexts() {
         updateTitle();
         byId('ghfu_subtitle').textContent = t('subtitle');
-        byId('ghfu_basic_title').textContent = t('basicTitle');
-        byId('ghfu_repo_label').textContent = t('repoLabel');
         byId('ghfu_search_label').textContent = t('searchLabel');
         byId('ghfu_search').placeholder = t('searchPlaceholder');
-        byId('ghfu_release_label').textContent = t('releaseLabel');
         byId('ghfu_keep_label').textContent = t('keepLabel');
-        byId('ghfu_filter_ext_label').textContent = t('filterExtLabel');
-        byId('ghfu_ext_config_btn').textContent = t('extConfigBtn');
-        byId('ghfu_ext_modal_title').textContent = t('extConfigTitle');
-        byId('ghfu_ext_modal_hint').textContent = t('extConfigHint');
-        byId('ghfu_ext_cancel').textContent = t('extConfigCancel');
-        byId('ghfu_ext_save_btn').textContent = t('extConfigSaveBtn');
+        byId('ghfu_retain_pkg_label').textContent = t('retainPkgLabel');
         byId('ghfu_status_label').textContent = t('statusLabel');
         updateAssetsLabel(0);
         byId('ghfu_log_label').textContent = t('logLabel');
+        byId('ghfu_changelog_label').textContent = t('changelogLabel');
+        byId('ghfu_updatelogs_box').textContent = t('fetchingInProgress');
         byId('ghfu_refresh').textContent = t('refreshBtn');
         byId('ghfu_notes').textContent = t('notesBtn');
-        byId('ghfu_upgrade').textContent = t('upgradeBtn');
+        updateUpgradeButtonText();
         byId('ghfu_backup').textContent = t('backupBtn');
         byId('ghfu_modal_title').textContent = t('upgradingTitle');
         byId('ghfu_modal_msg').textContent = t('upgradingMsg');
-        byId('ghfu_timeout_label').textContent = t('timeoutLabel');
-        byId('ghfu_timeout_hint').textContent = t('timeoutHint');
-        byId('ghfu_basic_save').textContent = t('saveBasicBtn');
+        byId('ghfu_countdown_cancel').textContent = t('countdownCancelBtn');
+        byId('ghfu_val_title').textContent = t('valTitle');
+        byId('ghfu_val_summary').textContent = t('valSummary');
+        byId('ghfu_val_force_label').textContent = t('valForceLabel');
+        byId('ghfu_val_force_desc').textContent = t('valForceDesc');
+        byId('ghfu_val_cancel').textContent = t('valCancelBtn');
+        byId('ghfu_val_continue').textContent = t('valContinueBtn');
 
         renderStatusCard({
             conclusion: t('beginFetch'),
             conclusionCls: 'ghfu-conclusion-warn',
-            installValue: t('fetchingInProgress'),
+            currentVerValue: t('fetchingInProgress'),
+            deviceValue: t('fetchingInProgress'),
             latestValue: t('fetchingInProgress'),
             publishedValue: t('fetchingInProgress'),
             releaseTotalValue: t('fetchingInProgress')
@@ -1062,11 +1172,9 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
             return null;
         }
-
         var browserOffset = -new Date().getTimezoneOffset();
         var targetOffset = (typeof routerTzOffsetMin === 'number') ? routerTzOffsetMin : browserOffset;
-        var shifted = new Date(dateObj.getTime() + (targetOffset - browserOffset) * 60000);
-        return shifted;
+        return new Date(dateObj.getTime() + (targetOffset - browserOffset) * 60000);
     }
 
     function formatRouterDate(dateObj) {
@@ -1099,42 +1207,81 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         el.scrollTop = el.scrollHeight;
     }
 
-    function setStatus(text) {
-        byId('ghfu_status').textContent = text;
-    }
-
-    function getCurrentInstallDisplay() {
+    function getCurrentVersionDisplay() {
+        if (currentDeviceInfo && currentDeviceInfo.system_version) {
+            return currentDeviceInfo.system_version;
+        }
         if (lastInstallEpoch) {
             return formatEpochToRouter(lastInstallEpoch);
         }
         return t('fetchingInProgress');
     }
 
-    function getCurrentSelectedFirmwareDisplay(selectedRaw) {
-        var src = (selectedRaw !== undefined && selectedRaw !== null) ? selectedRaw : ((byId('ghfu_release').value || ''));
-        return extractFirmwareName(src) || '-';
+    function getCurrentDeviceDisplay() {
+        if (resolvedDevicePath) {
+            return resolvedDevicePath;
+        }
+        if (currentDeviceInfo) {
+            if (currentDeviceInfo.candidates && currentDeviceInfo.candidates.length > 0) {
+                return currentDeviceInfo.candidates[0];
+            }
+            if (currentDeviceInfo.board_name) {
+                return currentDeviceInfo.board_name;
+            }
+            if (currentDeviceInfo.model) {
+                return currentDeviceInfo.model;
+            }
+        }
+        return '-';
+    }
+
+    function getLastFlashedFirmwareDisplay(flashedRaw) {
+        var src = (flashedRaw !== undefined && flashedRaw !== null) ? flashedRaw : (lastFlashedFirmwareText || '');
+        var extracted = extractFirmwareName(src);
+        if (extracted) {
+            return extracted;
+        }
+        if (currentDeviceInfo && currentDeviceInfo.system_version && assets.length > 0 && assets[0] && assets[0].name) {
+            var curVer = trim(currentDeviceInfo.system_version);
+            if (/^\d{2}\.\d{2}\.\d{4}$/.test(curVer)) {
+                return String(assets[0].name).replace(/\b\d{2}\.\d{2}\.\d{4}\b/, curVer);
+            }
+        }
+        return '-';
     }
 
     function renderStatusCard(opts) {
-        var installText = t('installTime') + ': ' + (opts.installValue || '-');
+        var curVerText = t('currentVersion') + ': ' + (opts.currentVerValue || getCurrentVersionDisplay());
+        var deviceText = t('currentDevice') + ': ' + (opts.deviceValue || getCurrentDeviceDisplay());
         var releaseText = t('latestRel') + ': ' + (opts.latestValue || '-');
         var publishedText = t('pubTime') + ': ' + (opts.publishedValue || '-');
         var releaseTotalText = t('releaseTotal') + ': ' + (opts.releaseTotalValue || '-');
-        var selectedText = t('releaseLabel') + ': ' + getCurrentSelectedFirmwareDisplay(opts.selectedRaw);
+        var lastFlashedText = t('lastFlashedLabel') + ': ' + getLastFlashedFirmwareDisplay(opts.lastFlashedRaw);
         var conclusionText = opts.conclusion || '-';
         var conclusionCls = opts.conclusionCls || 'ghfu-conclusion-ok';
-        var hintHtml = opts.hintHtml || '';
+        var badgeHtml = '';
+
+        if (opts.showBadge) {
+            if (opts.isFormal) {
+                badgeHtml = '<span class="ghfu-badge ghfu-badge-formal">' + escHtml(t('formalBadge')) + '</span>';
+            } else {
+                badgeHtml = '<span class="ghfu-badge ghfu-badge-beta">' + escHtml(t('betaBadge')) + '</span>';
+            }
+        }
 
         byId('ghfu_status').innerHTML =
-            '<div class="ghfu-status-hero ' + conclusionCls + '">' + escHtml(conclusionText) + '</div>' +
+            '<div class="ghfu-status-hero ' + conclusionCls + '">' +
+                '<span>' + escHtml(conclusionText) + '</span>' +
+                badgeHtml +
+            '</div>' +
             '<div class="ghfu-status-grid">' +
-                '<div class="ghfu-status-item">' + escHtml(installText) + '</div>' +
+                '<div class="ghfu-status-item">' + escHtml(deviceText) + '</div>' +
+                '<div class="ghfu-status-item">' + escHtml(curVerText) + '</div>' +
                 '<div class="ghfu-status-item">' + escHtml(releaseText) + '</div>' +
                 '<div class="ghfu-status-item">' + escHtml(publishedText) + '</div>' +
                 '<div class="ghfu-status-item">' + escHtml(releaseTotalText) + '</div>' +
-                '<div class="ghfu-status-item">' + escHtml(selectedText) + '</div>' +
-            '</div>' +
-            hintHtml;
+                '<div class="ghfu-status-item" id="ghfu_status_flashed_item">' + escHtml(lastFlashedText) + '</div>' +
+            '</div>';
     }
 
     function escHtml(s) {
@@ -1148,7 +1295,7 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
             try {
                 return JSON.parse(txt);
             } catch (e) {
-                throw new Error('Server returned invalid JSON response');
+                throw new Error(t('invalidJsonResp'));
             }
         });
     }
@@ -1194,15 +1341,13 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         if (!asset || typeof asset !== 'object') {
             return false;
         }
-
-        if (!filterExtEnabled) {
-            return true;
-        }
-
         var name = String(asset.name || '').toLowerCase();
-        for (var i = 0; i < validExtensions.length; i++) {
-            var ext = validExtensions[i].toLowerCase();
-            if (ext && name.length >= ext.length && name.slice(-ext.length) === ext) {
+        if (!name) {
+            return false;
+        }
+        for (var i = 0; i < BUILTIN_VALID_EXTS.length; i++) {
+            var ext = BUILTIN_VALID_EXTS[i];
+            if (name.length > ext.length && name.slice(-ext.length) === ext) {
                 return true;
             }
         }
@@ -1268,7 +1413,15 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
 
             var nameSpan = document.createElement('span');
             nameSpan.className = 'ghfu-asset-name';
-            nameSpan.textContent = (a.name || '') + ' (' + humanSize(a.size || 0) + ')';
+            var sizeStr = (a.size && a.size > 0) ? (' (' + humanSize(a.size) + ')') : '';
+            var htmlName = escHtml((a.name || '') + sizeStr);
+            if (a.recommended) {
+                htmlName += '<span class="ghfu-badge ghfu-badge-rec">' + escHtml(t('recBadge')) + '</span>';
+            }
+            if (a.is_latest) {
+                htmlName += '<span class="ghfu-badge ghfu-badge-latest">' + escHtml(t('latestBadge')) + '</span>';
+            }
+            nameSpan.innerHTML = htmlName;
 
             row.addEventListener('click', function() {
                 if (upgradeWorkflowBusy) {
@@ -1315,15 +1468,12 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         if (Array.isArray(raw)) {
             return raw;
         }
-
         if (raw === null || raw === undefined) {
             return [];
         }
-
         if (typeof raw === 'string') {
             return raw ? [raw] : [];
         }
-
         if (typeof raw === 'object') {
             var keys = Object.keys(raw).sort(function(a, b) {
                 var na = parseInt(a, 10), nb = parseInt(b, 10);
@@ -1341,50 +1491,19 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
             });
             return out;
         }
-
         return [String(raw)];
     }
 
-    function saveBasicConfig() {
-        if (!ensureNotBusy()) {
+    function saveUpgradeCheckOptions() {
+        if (upgradeWorkflowBusy) {
             return;
         }
-
-        var repo = trim(byId('ghfu_repo').value || '');
         var keepConfig = byId('ghfu_keep').checked ? '1' : '0';
-        var filterExtEnabledVal = byId('ghfu_filter_ext_enabled').checked ? '1' : '0';
-        var timeoutSec = parseInt(byId('ghfu_timeout').value, 10) || 15;
-        if (timeoutSec < 5) timeoutSec = 5;
-        if (timeoutSec > 300) timeoutSec = 300;
-        byId('ghfu_timeout').value = String(timeoutSec);
-
-        byId('ghfu_basic_save').disabled = true;
-        appendLog(t('savingBasic'));
-
+        var retainPkg = byId('ghfu_retain_pkg').checked ? '1' : '0';
         request('<%=url([[admin]], [[system]], [[ghfu]], [[config]])%>', {
-            repo: repo,
             keep_config: keepConfig,
-            fetch_timeout: String(timeoutSec),
-            filter_ext_enabled: filterExtEnabledVal
-        }).then(function(resp) {
-            byId('ghfu_basic_save').disabled = false;
-            if (!resp.ok) {
-                appendLog(resp.msg || t('requestFailed'));
-                return;
-            }
-
-            if (resp.config) {
-                byId('ghfu_repo').value = resp.config.github_repo || repo;
-                byId('ghfu_keep').checked = (resp.config.keep_config || '1') === '1';
-                byId('ghfu_timeout').value = resp.config.fetch_timeout || String(timeoutSec);
-                updateConfig(resp.config);
-            }
-
-            appendLog(t('basicSaved'));
-        }).catch(function(err) {
-            byId('ghfu_basic_save').disabled = false;
-            appendLog(t('requestFailed') + err);
-        });
+            retain_packages: retainPkg
+        }).catch(function() {});
     }
 
     function stopDownloadPolling() {
@@ -1394,11 +1513,117 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         }
     }
 
+    function stopCountdownTimer() {
+        if (countdownTimer) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+        }
+    }
+
     function restoreButtonsAfterDownload() {
         setUpgradeWorkflowBusy(false);
     }
 
-    function pollDownloadProgress(keepConfig, offset) {
+    function showValidationModal(fwName, keepConfig, retainPkg, validation) {
+        var modal = byId('ghfu-validate-modal');
+        var detailEl = byId('ghfu_val_detail');
+        var metaEl = byId('ghfu_val_meta');
+        var backupWarnEl = byId('ghfu_val_backup_warn');
+        var forceChk = byId('ghfu_val_force_chk');
+        var forceDesc = byId('ghfu_val_force_desc');
+        var continueBtn = byId('ghfu_val_continue');
+
+        if (modal && modal.parentNode !== document.body) {
+            document.body.appendChild(modal);
+        }
+
+        var msg = trim(validation && validation.message || '');
+        if (detailEl) {
+            if (msg) {
+                detailEl.textContent = msg;
+                detailEl.style.display = 'block';
+            } else {
+                detailEl.textContent = '';
+                detailEl.style.display = 'none';
+            }
+        }
+
+        if (metaEl) {
+            var metaParts = [];
+            if (validation && validation.size > 0) {
+                metaParts.push('<strong>' + escHtml(t('sizeLabel')) + ':</strong> ' + escHtml(humanSize(validation.size)));
+            }
+            if (validation && validation.sha256) {
+                metaParts.push('<strong>' + escHtml(t('sha256Label')) + ':</strong> <code>' + escHtml(validation.sha256) + '</code>');
+            }
+            if (metaParts.length > 0) {
+                metaEl.innerHTML = metaParts.join(' &nbsp;|&nbsp; ');
+                metaEl.style.display = 'block';
+            } else {
+                metaEl.style.display = 'none';
+            }
+        }
+
+        var allowBackup = !(validation && validation.allow_backup === false);
+        var effectiveKeepConfig = allowBackup ? keepConfig : '0';
+        if (backupWarnEl) {
+            if (!allowBackup && keepConfig === '1') {
+                backupWarnEl.textContent = t('valNoBackupWarn');
+                backupWarnEl.style.display = 'block';
+            } else {
+                backupWarnEl.style.display = 'none';
+            }
+        }
+
+        var forceable = !(validation && validation.forceable === false);
+        if (forceChk) {
+            forceChk.checked = false;
+            forceChk.disabled = !forceable;
+        }
+        if (forceDesc) {
+            forceDesc.textContent = forceable ? t('valForceDesc') : t('valNotForceable');
+        }
+        if (continueBtn) {
+            continueBtn.disabled = true;
+        }
+
+        pendingValidationCtx = {
+            fwName: fwName,
+            keepConfig: effectiveKeepConfig,
+            retainPkg: retainPkg,
+            forceable: forceable
+        };
+
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+        upgradeModalActive = true;
+        document.body.classList.add('ghfu-upgrade-lock');
+        document.documentElement.classList.add('ghfu-upgrade-lock');
+    }
+
+    function hideValidationModal() {
+        var modal = byId('ghfu-validate-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        pendingValidationCtx = null;
+        upgradeModalActive = false;
+        document.body.classList.remove('ghfu-upgrade-lock');
+        document.documentElement.classList.remove('ghfu-upgrade-lock');
+    }
+
+    function handleDownloadedFirmware(fwName, keepConfig, retainPkg, validation) {
+        var isValid = !(validation && validation.valid === false);
+        if (!isValid) {
+            showValidationModal(fwName, keepConfig, retainPkg, validation);
+            return;
+        }
+        var effectiveKeep = (validation && validation.allow_backup === false) ? '0' : keepConfig;
+        startUpgradeCountdown(fwName, effectiveKeep, retainPkg, false);
+    }
+
+    function pollDownloadProgress(keepConfig, retainPkg, offset) {
         request('<%=url([[admin]], [[system]], [[ghfu]], [[download_status]])%>', {
             offset: String(offset || 0)
         }).then(function(resp) {
@@ -1415,7 +1640,7 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
             if (resp.done) {
                 stopDownloadPolling();
                 if (resp.download_ok && resp.fw_name) {
-                    startUpgradeCountdown(resp.fw_name, keepConfig);
+                    handleDownloadedFirmware(resp.fw_name, keepConfig, retainPkg, resp.validation);
                 } else {
                     restoreButtonsAfterDownload();
                 }
@@ -1423,10 +1648,10 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
             }
 
             downloadPollTimer = setTimeout(function() {
-                pollDownloadProgress(keepConfig, resp.next_offset || 0);
+                pollDownloadProgress(keepConfig, retainPkg, resp.next_offset || 0);
             }, 1000);
         }).catch(function(err) {
-            appendLog(t('requestFailed') + err);
+            appendLog(t('requestFailed') + ' ' + err);
             restoreButtonsAfterDownload();
             stopDownloadPolling();
         });
@@ -1437,17 +1662,13 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
             return;
         }
 
-        var repo = (byId('ghfu_repo').value || '').trim();
-        var timeoutSec = parseInt(byId('ghfu_timeout').value, 10) || 15;
-        if (timeoutSec < 5) timeoutSec = 5;
-        if (timeoutSec > 300) timeoutSec = 300;
-
         byId('ghfu_refresh').disabled = true;
         byId('ghfu_notes').disabled = true;
         renderStatusCard({
             conclusion: t('beginFetch'),
             conclusionCls: 'ghfu-conclusion-warn',
-            installValue: getCurrentInstallDisplay(),
+            currentVerValue: getCurrentVersionDisplay(),
+            deviceValue: getCurrentDeviceDisplay(),
             latestValue: t('fetchingInProgress'),
             publishedValue: t('fetchingInProgress'),
             releaseTotalValue: t('fetchingInProgress')
@@ -1456,111 +1677,116 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
 
         requestWithTimeout(
             '<%=url([[admin]], [[system]], [[ghfu]], [[status]])%>',
-            { repo: repo, fetch_timeout: String(timeoutSec) },
-            (timeoutSec + 5) * 1000
+            {},
+            20000
         ).then(function(resp) {
             appVersion = String(resp && resp.app_version || '');
             updateTitle();
-                byId('ghfu_refresh').disabled = false;
-                if (!resp.ok) {
-                    byId('ghfu_notes').disabled = true;
-                    latestReleaseUrl = '';
-                    if (typeof resp.tz_offset_min === 'number') {
-                        routerTzOffsetMin = resp.tz_offset_min;
-                    }
-                    if (resp.install_epoch) {
-                        lastInstallEpoch = resp.install_epoch;
-                    }
-                    renderStatusCard({
-                        conclusion: t('fetchGithubReleaseFailed'),
-                        conclusionCls: 'ghfu-conclusion-warn',
-                        installValue: resp.install_epoch ? formatEpochToRouter(resp.install_epoch) : getCurrentInstallDisplay(),
-                        latestValue: t('fetchFieldFailed'),
-                        publishedValue: t('fetchFieldFailed'),
-                        releaseTotalValue: t('fetchFieldFailed'),
-                        selectedRaw: (resp.config && resp.config.selected_release) || byId('ghfu_release').value
-                    });
-                    appendLog(resp.msg || t('fetchFailed'));
-                    return;
-                }
+            if (resp && resp.device_info) {
+                currentDeviceInfo = resp.device_info;
+            }
+            if (resp && resp.resolved_path) {
+                resolvedDevicePath = resp.resolved_path;
+            }
+            updateWarnings(resp && resp.has_unsaved_uci);
 
-                byId('ghfu_repo').value = resp.repo || repo;
-                if (resp.config) {
-                    byId('ghfu_release').value = resp.config.selected_release || '';
-                    byId('ghfu_keep').checked = (resp.config.keep_config || '1') === '1';
-                    updateConfig(resp.config);
-                }
-                if (typeof resp.fetch_timeout === 'number') {
-                    byId('ghfu_timeout').value = String(resp.fetch_timeout);
-                }
-
+            byId('ghfu_refresh').disabled = false;
+            if (!resp.ok) {
+                byId('ghfu_notes').disabled = true;
+                latestReleaseUrl = '';
                 if (typeof resp.tz_offset_min === 'number') {
                     routerTzOffsetMin = resp.tz_offset_min;
                 }
                 if (resp.install_epoch) {
                     lastInstallEpoch = resp.install_epoch;
                 }
-
-                latestReleaseName = (resp.latest && resp.latest.release_name) ? resp.latest.release_name : '';
-                latestReleaseUrl = (resp.latest && resp.latest.html_url) ? String(resp.latest.html_url) : '';
-                assets = normalizeAssets(resp.latest && resp.latest.assets);
-                selectedAsset = null;
-                // Always reset filter on refresh to avoid stale keyword hiding all assets.
-                byId('ghfu_search').value = '';
-                renderAssets();
-                applyAutoFirmwareFilter((resp.config && resp.config.selected_release) || '');
-                byId('ghfu_notes').disabled = !latestReleaseUrl;
-                // Allow repeated upgrade even when current system is already the latest,
-                // as long as release assets are available for selection.
-                byId('ghfu_upgrade').disabled = (assets.length === 0);
-
-                var conclusionCls = resp.has_new ? 'ghfu-conclusion-new' : 'ghfu-conclusion-ok';
-                var hintHtml = '';
-                if (resp.fallback_used) {
-                    hintHtml = '<div class="ghfu-status-line ghfu-conclusion-warn">' + escHtml(t('fallbackUsedHint')) + '</div>';
-                } else if (resp.partial_assets) {
-                    hintHtml = '<div class="ghfu-status-line ghfu-conclusion-warn">' + escHtml(t('partialAssetsHint')) + '</div>';
-                }
                 renderStatusCard({
-                    conclusion: resp.msg || '-',
-                    conclusionCls: conclusionCls,
-                    installValue: resp.install_epoch ? formatEpochToRouter(resp.install_epoch) : t('unknown'),
-                    latestValue: ((resp.latest && resp.latest.release_name) || '-'),
-                    publishedValue: ((resp.latest && resp.latest.published_at) ? formatIsoToRouter(resp.latest.published_at) : '-'),
-                    releaseTotalValue: (resp.latest && typeof resp.latest.release_total_count === 'number') ? String(resp.latest.release_total_count) : '-',
-                    selectedRaw: (resp.config && resp.config.selected_release) || byId('ghfu_release').value,
-                    hintHtml: hintHtml
-                });
-
-                appendLog(t('latestRelease') + ((resp.latest && resp.latest.release_name) || '-'));
-                appendLog(resp.msg || t('statusUpdated'));
-                if (resp.fallback_used) {
-                    appendLog(t('fallbackUsedHint'));
-                } else if (resp.partial_assets) {
-                    appendLog(t('partialAssetsHint'));
-                }
-
-                syncInteractiveState();
-            })
-            .catch(function(err) {
-                byId('ghfu_refresh').disabled = false;
-                byId('ghfu_notes').disabled = true;
-                latestReleaseUrl = '';
-                renderStatusCard({
-                    conclusion: t('fetchGithubReleaseFailed'),
+                    conclusion: t('fetchFirmwareFailed'),
                     conclusionCls: 'ghfu-conclusion-warn',
-                    installValue: getCurrentInstallDisplay(),
+                    currentVerValue: getCurrentVersionDisplay(),
+                    deviceValue: getCurrentDeviceDisplay(),
                     latestValue: t('fetchFieldFailed'),
                     publishedValue: t('fetchFieldFailed'),
-                    releaseTotalValue: t('fetchFieldFailed')
+                    releaseTotalValue: t('fetchFieldFailed'),
+                    lastFlashedRaw: lastFlashedFirmwareText
                 });
-                byId('ghfu_upgrade').disabled = true;
-                if (err && err.name === 'AbortError') {
-                    appendLog(t('fetchTimedOut'));
+                appendLog(resp.msg || t('fetchFailed'));
+                return;
+            }
+
+            if (resp.config) {
+                updateConfig(resp.config);
+            }
+            if (typeof resp.tz_offset_min === 'number') {
+                routerTzOffsetMin = resp.tz_offset_min;
+            }
+            if (resp.install_epoch) {
+                lastInstallEpoch = resp.install_epoch;
+            }
+
+            hasNewUpdate = !!resp.has_new;
+            latestIsFormal = (resp.notice !== false);
+
+            var ulogsBox = byId('ghfu_updatelogs_box');
+            if (ulogsBox) {
+                var ulogs = trim(resp.updatelogs || (resp.latest && resp.latest.updatelogs) || '');
+                if (ulogs) {
+                    ulogsBox.innerHTML = ulogs;
                 } else {
-                    appendLog(t('requestFailed') + err);
+                    ulogsBox.textContent = t('noChangelog');
                 }
+            }
+
+            latestReleaseName = (resp.latest && resp.latest.release_name) ? resp.latest.release_name : '';
+            latestReleaseUrl = (resp.latest && resp.latest.html_url) ? String(resp.latest.html_url) : '';
+            assets = normalizeAssets(resp.latest && resp.latest.assets);
+            selectedAsset = null;
+            byId('ghfu_search').value = '';
+            renderAssets();
+            applyAutoFirmwareFilter();
+            updateUpgradeButtonText();
+            byId('ghfu_notes').disabled = !latestReleaseUrl;
+            byId('ghfu_upgrade').disabled = (assets.length === 0 || !selectedAsset);
+
+            var conclusionCls = resp.has_new ? 'ghfu-conclusion-new' : 'ghfu-conclusion-ok';
+            renderStatusCard({
+                conclusion: resp.msg || '-',
+                conclusionCls: conclusionCls,
+                showBadge: true,
+                isFormal: latestIsFormal,
+                currentVerValue: getCurrentVersionDisplay(),
+                deviceValue: getCurrentDeviceDisplay(),
+                latestValue: ((resp.latest && resp.latest.release_name) || '-'),
+                publishedValue: ((resp.latest && resp.latest.published_at) ? formatIsoToRouter(resp.latest.published_at) : '-'),
+                releaseTotalValue: (resp.latest && typeof resp.latest.release_total_count === 'number') ? String(resp.latest.release_total_count) : '-',
+                lastFlashedRaw: (resp.config && resp.config.selected_release) || lastFlashedFirmwareText
             });
+
+            appendLog(t('latestRelease') + ' ' + ((resp.latest && resp.latest.release_name) || '-'));
+            appendLog(resp.msg || t('statusUpdated'));
+
+            syncInteractiveState();
+        })
+        .catch(function(err) {
+            byId('ghfu_refresh').disabled = false;
+            byId('ghfu_notes').disabled = true;
+            latestReleaseUrl = '';
+            renderStatusCard({
+                conclusion: t('fetchFirmwareFailed'),
+                conclusionCls: 'ghfu-conclusion-warn',
+                currentVerValue: getCurrentVersionDisplay(),
+                deviceValue: getCurrentDeviceDisplay(),
+                latestValue: t('fetchFieldFailed'),
+                publishedValue: t('fetchFieldFailed'),
+                releaseTotalValue: t('fetchFieldFailed')
+            });
+            byId('ghfu_upgrade').disabled = true;
+            if (err && err.name === 'AbortError') {
+                appendLog(t('fetchTimedOut'));
+            } else {
+                appendLog(t('requestFailed') + ' ' + err);
+            }
+        });
     }
 
     function openLatestReleasePage() {
@@ -1579,29 +1805,29 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
             return;
         }
 
-        var repo = (byId('ghfu_repo').value || '').trim();
-        var selectedRelease = (byId('ghfu_release').value || '').trim();
+        if (!selectedAsset || !selectedAsset.url) {
+            appendLog(t('chooseAsset'));
+            return;
+        }
+
+        var selectedRelease = trim(selectedReleaseText || selectedAsset.name || '');
         var keepConfig = byId('ghfu_keep').checked ? '1' : '0';
+        var retainPkg = byId('ghfu_retain_pkg').checked ? '1' : '0';
 
         if (!selectedRelease) {
             appendLog(t('chooseFirmware'));
             return;
         }
 
-        if (!selectedAsset || !selectedAsset.url) {
-            appendLog(t('chooseAsset'));
-            return;
-        }
-
         setUpgradeWorkflowBusy(true);
         stopDownloadPolling();
 
-        appendLog(t('beginDownload') + (selectedAsset.name || selectedRelease));
+        appendLog(t('beginDownload') + ' ' + (selectedAsset.name || selectedRelease));
 
         request('<%=url([[admin]], [[system]], [[ghfu]], [[download]])%>', {
-            repo: repo,
             selected_release: selectedRelease,
             keep_config: keepConfig,
+            retain_packages: retainPkg,
             asset_url: selectedAsset.url,
             asset_name: selectedAsset.name || selectedRelease,
             asset_size: String(selectedAsset.size || 0),
@@ -1615,44 +1841,64 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
             }
 
             if (resp.started) {
-                pollDownloadProgress(keepConfig, 0);
+                pollDownloadProgress(keepConfig, retainPkg, 0);
                 return;
             }
 
             if (resp.fw_name) {
-                startUpgradeCountdown(resp.fw_name, keepConfig);
+                handleDownloadedFirmware(resp.fw_name, keepConfig, retainPkg, resp.validation);
             } else {
                 restoreButtonsAfterDownload();
             }
         }).catch(function(err) {
-            appendLog(t('upgradeReqFailed') + err);
+            appendLog(t('upgradeReqFailed') + ' ' + err);
             restoreButtonsAfterDownload();
         });
     }
 
-    function startUpgradeCountdown(fwName, keepConfig) {
+    function startUpgradeCountdown(fwName, keepConfig, retainPkg, forceUpgrade) {
+        stopCountdownTimer();
         var sec = 5;
+        activeCountdownFwName = fwName;
         showUpgradeModal('countdown', sec);
-        appendLog(t('countdownPrefix') + sec + t('countdownSuffix'));
-        var timer = setInterval(function() {
+        appendLog(t('countdownLogMsg').replace('%d', String(sec)));
+        countdownTimer = setInterval(function() {
             sec--;
             if (sec <= 0) {
-                clearInterval(timer);
+                stopCountdownTimer();
+                activeCountdownFwName = '';
                 appendLog(t('startingUpgrade'));
                 showUpgradeModal('upgrading');
-                doUpgradeRequest(fwName, keepConfig);
+                doUpgradeRequest(fwName, keepConfig, retainPkg, forceUpgrade);
             } else {
                 showUpgradeModal('countdown', sec);
-                appendLog(t('countdownPrefix') + sec + t('countdownSuffix'));
+                appendLog(t('countdownLogMsg').replace('%d', String(sec)));
             }
         }, 1000);
     }
 
-    function doUpgradeRequest(fwName, keepConfig) {
-        request('<%=url([[admin]], [[system]], [[ghfu]], [[upgrade]])%>', {
+    function cancelUpgradeCountdown() {
+        stopCountdownTimer();
+        var fwName = activeCountdownFwName;
+        activeCountdownFwName = '';
+        hideUpgradeModal();
+        appendLog(t('countdownCancelledLog'));
+        restoreButtonsAfterDownload();
+        if (fwName) {
+            request('<%=url([[admin]], [[system]], [[ghfu]], [[cancel_upgrade]])%>', {
+                fw_name: fwName
+            }).catch(function() {});
+        }
+    }
+
+    function doUpgradeRequest(fwName, keepConfig, retainPkg, forceUpgrade) {
+        requestWithTimeout('<%=url([[admin]], [[system]], [[ghfu]], [[upgrade]])%>', {
             fw_name: fwName,
-            keep_config: keepConfig
-        }).then(function(resp) {
+            selected_release: trim(selectedReleaseText || fwName),
+            keep_config: keepConfig,
+            retain_packages: retainPkg,
+            force: forceUpgrade ? '1' : '0'
+        }, 25000).then(function(resp) {
             var lines = normalizeLogLines(resp.logs);
             lines.forEach(appendLog);
             if (resp.ok && resp.rebooting) {
@@ -1662,11 +1908,16 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
             }
 
             hideUpgradeModal();
+            if (resp && resp.need_force) {
+                showValidationModal(fwName, keepConfig, retainPkg, resp.validation);
+                return;
+            }
             restoreButtonsAfterDownload();
         }).catch(function(err) {
-            appendLog(t('upgradeReqFailed') + err);
-            hideUpgradeModal();
-            restoreButtonsAfterDownload();
+            // sysupgrade may terminate uhttpd or drop the connection before HTTP response finishes
+            appendLog(t('startingSystemUpgrade'));
+            showUpgradeModal('upgrading');
+            pollForReboot();
         });
     }
 
@@ -1677,7 +1928,6 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         var currentStage = stage || 'upgrading';
 
         if (modal) {
-            // Move modal to body root to avoid theme stacking-context clipping.
             if (modal.parentNode !== document.body) {
                 document.body.appendChild(modal);
             }
@@ -1730,49 +1980,69 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
         rebootPollAttempts = 0;
         rebootSeenOffline = false;
 
-        var heartbeatUrl = '<%=url([[admin]], [[system]], [[ghfu]], [[local_status]])%>';
+        var pingUrl = '<%=resource%>/icons/loading.svg';
+        var adminHomeUrl = '<%=url("admin")%>';
+        if (!adminHomeUrl || adminHomeUrl.indexOf('/cgi-bin/luci/admin') === -1) {
+            adminHomeUrl = '/cgi-bin/luci/admin/';
+        } else if (adminHomeUrl.slice(-1) !== '/') {
+            adminHomeUrl += '/';
+        }
 
         var poll = function() {
             rebootPollTimer = setTimeout(function() {
                 rebootPollAttempts++;
+                if (rebootPollAttempts >= 60 && byId('ghfu_modal_msg')) {
+                    byId('ghfu_modal_msg').textContent = t('unreachableMsg');
+                }
 
-                fetch(heartbeatUrl + '?_=' + Date.now(), {
-                    method: 'POST',
-                    cache: 'no-cache',
-                    credentials: 'include'
-                })
-                    .then(function() {
-                        if (!rebootSeenOffline) {
-                            poll();
-                            return;
-                        }
+                var settled = false;
+                var img = new Image();
+                var probeTimeout = setTimeout(function() {
+                    if (settled) { return; }
+                    settled = true;
+                    img.onload = null;
+                    img.onerror = null;
+                    rebootSeenOffline = true;
+                    poll();
+                }, 3500);
 
-                        clearTimeout(rebootPollTimer);
-                        hideUpgradeModal();
-                        window.location.reload();
-                    })
-                    .catch(function() {
-                        rebootSeenOffline = true;
-
-                        // Keep waiting until router comes back online.
+                img.onload = function() {
+                    if (settled) { return; }
+                    settled = true;
+                    clearTimeout(probeTimeout);
+                    if (!rebootSeenOffline && rebootPollAttempts < 12) {
                         poll();
-                    });
-            }, 2500);
+                        return;
+                    }
+                    clearTimeout(rebootPollTimer);
+                    setTimeout(function() {
+                        hideUpgradeModal();
+                        window.location.href = adminHomeUrl;
+                    }, 2000);
+                };
+                img.onerror = function() {
+                    if (settled) { return; }
+                    settled = true;
+                    clearTimeout(probeTimeout);
+                    rebootSeenOffline = true;
+                    poll();
+                };
+                img.src = pingUrl + '?_=' + Date.now();
+            }, 4000);
         };
 
-        poll();
+        rebootPollTimer = setTimeout(poll, 15000);
     }
 
     function blockNavigationWhileUpgrading(evt) {
         if (!upgradeModalActive) {
             return;
         }
-
-        var modal = byId('ghfu-upgrade-modal');
-        if (modal && modal.contains(evt.target)) {
+        var upModal = byId('ghfu-upgrade-modal');
+        var valModal = byId('ghfu-validate-modal');
+        if ((upModal && upModal.contains(evt.target)) || (valModal && valModal.contains(evt.target))) {
             return;
         }
-
         evt.preventDefault();
         evt.stopPropagation();
     }
@@ -1791,64 +2061,41 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
 
     byId('ghfu_refresh').addEventListener('click', refreshStatus);
     byId('ghfu_upgrade').addEventListener('click', doDownload);
-    byId('ghfu_basic_save').addEventListener('click', saveBasicConfig);
+    byId('ghfu_keep').addEventListener('change', saveUpgradeCheckOptions);
+    byId('ghfu_retain_pkg').addEventListener('change', saveUpgradeCheckOptions);
     byId('ghfu_search').addEventListener('input', renderAssets);
-    byId('ghfu_filter_ext_enabled').addEventListener('change', function() {
-        if (upgradeWorkflowBusy) { return; }
-        filterExtEnabled = this.checked;
-        renderAssets();
-    });
-    byId('ghfu_ext_config_btn').addEventListener('click', openExtConfigModal);
-    byId('ghfu_ext_cancel').addEventListener('click', closeExtConfigModal);
-    byId('ghfu_ext_save_btn').addEventListener('click', saveExtConfig);
     byId('ghfu_backup').addEventListener('click', function() {
         window.location.href = '<%=url([[admin]], [[system]], [[ghfu]], [[backup]])%>';
     });
     byId('ghfu_notes').addEventListener('click', openLatestReleasePage);
+    byId('ghfu_countdown_cancel').addEventListener('click', cancelUpgradeCountdown);
 
-    function openExtConfigModal() {
-        if (upgradeWorkflowBusy) { return; }
-        byId('ghfu_ext_textarea').value = validExtensions.join('\n');
-        byId('ghfu-ext-modal').classList.add('ghfu-modal-open');
-        byId('ghfu_ext_textarea').focus();
-    }
+    byId('ghfu_val_force_chk').addEventListener('change', function() {
+        var canContinue = !!(pendingValidationCtx && pendingValidationCtx.forceable && this.checked);
+        byId('ghfu_val_continue').disabled = !canContinue;
+    });
 
-    function closeExtConfigModal() {
-        byId('ghfu-ext-modal').classList.remove('ghfu-modal-open');
-    }
+    byId('ghfu_val_cancel').addEventListener('click', function() {
+        var ctx = pendingValidationCtx;
+        hideValidationModal();
+        appendLog(t('valCancelledLog'));
+        restoreButtonsAfterDownload();
+        if (ctx && ctx.fwName) {
+            request('<%=url([[admin]], [[system]], [[ghfu]], [[cancel_upgrade]])%>', {
+                fw_name: ctx.fwName
+            }).catch(function() {});
+        }
+    });
 
-    function saveExtConfig() {
-        var raw = byId('ghfu_ext_textarea').value || '';
-        var lines = raw.split(/[\r\n]+/).map(function(s) { return s.trim(); }).filter(Boolean);
-        if (lines.length === 0) {
-            appendLog(t('extConfigSaving'));
+    byId('ghfu_val_continue').addEventListener('click', function() {
+        var ctx = pendingValidationCtx;
+        var forceChecked = byId('ghfu_val_force_chk').checked;
+        if (!ctx || !ctx.forceable || !forceChecked) {
             return;
         }
-        var extStr = lines.join(' ');
-        byId('ghfu_ext_save_btn').disabled = true;
-        appendLog(t('extConfigSaving'));
-
-        request('<%=url([[admin]], [[system]], [[ghfu]], [[config]])%>', {
-            valid_extensions: extStr
-        }).then(function(resp) {
-            byId('ghfu_ext_save_btn').disabled = false;
-            if (!resp.ok) {
-                appendLog(resp.msg || t('requestFailed'));
-                return;
-            }
-            if (resp.config) {
-                updateConfig(resp.config);
-            } else {
-                validExtensions = lines;
-            }
-            renderAssets();
-            appendLog(t('extConfigSaved'));
-            closeExtConfigModal();
-        }).catch(function(err) {
-            byId('ghfu_ext_save_btn').disabled = false;
-            appendLog(t('requestFailed') + err);
-        });
-    }
+        hideValidationModal();
+        startUpgradeCountdown(ctx.fwName, ctx.keepConfig, ctx.retainPkg, true);
+    });
 
     function initLocalStatus() {
         request('<%=url([[admin]], [[system]], [[ghfu]], [[local_status]])%>', {})
@@ -1860,11 +2107,12 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
                 appVersion = String(resp.app_version || '');
                 updateTitle();
 
+                if (resp.device_info) {
+                    currentDeviceInfo = resp.device_info;
+                }
+                updateWarnings(resp.has_unsaved_uci);
+
                 if (resp.config) {
-                    byId('ghfu_repo').value = resp.config.github_repo || byId('ghfu_repo').value;
-                    byId('ghfu_release').value = resp.config.selected_release || '';
-                    byId('ghfu_keep').checked = (resp.config.keep_config || '1') === '1';
-                    byId('ghfu_timeout').value = resp.config.fetch_timeout || byId('ghfu_timeout').value || '15';
                     updateConfig(resp.config);
                 }
 
@@ -1878,18 +2126,20 @@ Repository: https://github.com/smallprogram/luci-app-ghfu
                 renderStatusCard({
                     conclusion: t('beginFetch'),
                     conclusionCls: 'ghfu-conclusion-warn',
-                    installValue: getCurrentInstallDisplay(),
+                    currentVerValue: getCurrentVersionDisplay(),
+                    deviceValue: getCurrentDeviceDisplay(),
                     latestValue: t('fetchingInProgress'),
                     publishedValue: t('fetchingInProgress'),
                     releaseTotalValue: t('fetchingInProgress'),
-                    selectedRaw: (resp.config && resp.config.selected_release) || byId('ghfu_release').value
+                    lastFlashedRaw: lastFlashedFirmwareText
                 });
             })
             .catch(function() {
                 renderStatusCard({
                     conclusion: t('beginFetch'),
                     conclusionCls: 'ghfu-conclusion-warn',
-                    installValue: getCurrentInstallDisplay(),
+                    currentVerValue: getCurrentVersionDisplay(),
+                    deviceValue: getCurrentDeviceDisplay(),
                     latestValue: t('fetchingInProgress'),
                     publishedValue: t('fetchingInProgress'),
                     releaseTotalValue: t('fetchingInProgress')

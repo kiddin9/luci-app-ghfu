@@ -1,14 +1,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-ghfu
-PKG_VERSION:=1.3.3
+PKG_VERSION:=1.6.1
 PKG_RELEASE:=1
 PKG_LICENSE:=GPL-3.0-only
 PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=smallprogram
+PKG_MAINTAINER:=Kiddin'
 
-LUCI_TITLE:=LuCI support for GitHub Firmware Upgrade
-LUCI_DEPENDS:=+luci-base +wget-ssl +ca-bundle
+LUCI_TITLE:=LuCI for System Online Upgrade
+LUCI_DEPENDS:=+luci-base +curl +wget-ssl +ca-bundle
 LUCI_PKGARCH:=all
 
 ifneq ($(wildcard $(TOPDIR)/feeds/luci/luci.mk),)
