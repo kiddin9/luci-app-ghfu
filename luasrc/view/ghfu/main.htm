@@ -981,7 +981,7 @@ Adapted exclusively for https://dl.openwrt.ai/firmware with built-in firmware fi
         }
         var partWarn = byId('ghfu_custom_part_warn');
         if (partWarn && currentDeviceInfo) {
-            partWarn.style.display = currentDeviceInfo.is_kwrt ? 'none' : 'block';
+            partWarn.style.display = currentDeviceInfo.show_part_warn ? 'block' : 'none';
         }
     }
 
