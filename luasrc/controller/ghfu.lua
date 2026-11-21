@@ -387,7 +387,6 @@ end
 
 local function detect_device_info()
     local target = ""
-    local distrib_id = ""
     local distrib_rev = ""
     local distrib_desc = ""
 
@@ -396,8 +395,6 @@ local function detect_device_info()
         local k, v = line:match("^([%w_]+)=['\"]?(.-)['\"]?$")
         if k == "DISTRIB_TARGET" then
             target = trim(v)
-        elseif k == "DISTRIB_ID" then
-            distrib_id = trim(v)
         elseif k == "DISTRIB_REVISION" then
             distrib_rev = trim(v)
         elseif k == "DISTRIB_DESCRIPTION" then
@@ -434,9 +431,6 @@ local function detect_device_info()
         if ubus_board.release then
             if target == "" and ubus_board.release.target then
                 target = trim(tostring(ubus_board.release.target))
-            end
-            if distrib_id == "" and ubus_board.release.distribution then
-                distrib_id = trim(tostring(ubus_board.release.distribution))
             end
         end
         if board_name == "" and ubus_board.board_name then
@@ -514,10 +508,8 @@ local function detect_device_info()
         rootfs_partsize_mb = rootfs_partsize_mb,
         show_part_warn = show_part_warn,
         system_version = sys_ver,
-        distrib_id = distrib_id,
         distrib_rev = distrib_rev,
         distrib_desc = distrib_desc,
-        is_kwrt = (distrib_id == "Kwrt" or distrib_id == "1004" or sys_ver:match("^%d%d%.%d%d%.%d%d%d%d$") ~= nil),
         candidates = candidates
     }
 end
