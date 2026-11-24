@@ -120,6 +120,41 @@ local MONTHS = {
     jul = 7, aug = 8, sep = 9, oct = 10, nov = 11, dec = 12
 }
 
+-- Convert UTC calendar components + offset_minutes (e.g. +480 for UTC+8) to standard UTC ISO-8601 "...Z"
+local function components_to_utc_iso(y, m, d, hh, mm, ss, offset_min)
+    local local_epoch = os.time({
+        year = tonumber(y),
+        month = tonumber(m),
+        day = tonumber(d),
+        hour = tonumber(hh) or 0,
+        min = tonumber(mm) or 0,
+        sec = tonumber(ss) or 0
+    })
+    if not local_epoch then
+        return ""
+    end
+    -- Find router's own os.time local-vs-UTC delta at this timestamp so the conversion is independent of router timezone
+    local utc_tbl = os.date("!*t", local_epoch)
+    utc_tbl.isdst = false
+    local router_tz_sec = os.difftime(local_epoch, os.time(utc_tbl))
+    local true_utc_epoch = local_epoch + router_tz_sec - ((tonumber(offset_min) or 0) * 60)
+    return os.date("!%Y-%m-%dT%H:%M:%SZ", true_utc_epoch)
+end
+
+-- Extract explicit timezone offset in minutes if present; default to +480 (UTC+8 Beijing time on dl.openwrt.ai) when omitted
+local function detect_date_tz_offset_min(date_str)
+    local upper = (date_str or ""):upper()
+    if upper:match("GMT") or upper:match("UTC") or upper:match("%dZ$") then
+        return 0
+    end
+    local sign, th, tm = date_str:match("([%+%-])(%d%d):?(%d%d)$")
+    if sign and th and tm then
+        local mins = (tonumber(th) or 0) * 60 + (tonumber(tm) or 0)
+        return (sign == "-") and -mins or mins
+    end
+    return 480
+end
+
 local function parse_version_token(ver_str)
     ver_str = trim(ver_str or "")
     if ver_str == "" then
@@ -129,7 +164,7 @@ local function parse_version_token(ver_str)
     if mm and dd and yyyy then
         local m, d, y = tonumber(mm), tonumber(dd), tonumber(yyyy)
         local num_str = string.format("%04d%02d%02d", y, m, d)
-        local iso = string.format("%04d-%02d-%02dT00:00:00Z", y, m, d)
+        local iso = components_to_utc_iso(y, m, d, 0, 0, 0, 480)
         local epoch = os.time({ year = y, month = m, day = d, hour = 0, min = 0, sec = 0 }) or 0
         return string.format("%02d.%02d.%04d", m, d, y), epoch, num_str, iso
     end
@@ -137,7 +172,7 @@ local function parse_version_token(ver_str)
     if yyyy2 and mm2 and dd2 then
         local y, m, d = tonumber(yyyy2), tonumber(mm2), tonumber(dd2)
         local num_str = string.format("%04d%02d%02d", y, m, d)
-        local iso = string.format("%04d-%02d-%02dT00:00:00Z", y, m, d)
+        local iso = components_to_utc_iso(y, m, d, 0, 0, 0, 480)
         local epoch = os.time({ year = y, month = m, day = d, hour = 0, min = 0, sec = 0 }) or 0
         return string.format("%02d.%02d.%04d", m, d, y), epoch, num_str, iso
     end
@@ -146,7 +181,7 @@ local function parse_version_token(ver_str)
         local y, m, d = tonumber(yyyy3), tonumber(mm3), tonumber(dd3)
         if m >= 1 and m <= 12 and d >= 1 and d <= 31 then
             local num_str = string.format("%04d%02d%02d", y, m, d)
-            local iso = string.format("%04d-%02d-%02dT00:00:00Z", y, m, d)
+            local iso = components_to_utc_iso(y, m, d, 0, 0, 0, 480)
             local epoch = os.time({ year = y, month = m, day = d, hour = 0, min = 0, sec = 0 }) or 0
             return string.format("%02d.%02d.%04d", m, d, y), epoch, num_str, iso
         end
@@ -156,26 +191,29 @@ end
 
 local function normalize_date_str(date_str, filename)
     date_str = trim(date_str or "")
+    local tz_min = detect_date_tz_offset_min(date_str)
 
     local y, m, d, hh, mm, ss = date_str:match("^(%d%d%d%d)%-(%d%d)%-(%d%d)[T%s]+(%d%d):(%d%d):?(%d*)")
     if y and m and d then
         ss = (ss and ss ~= "") and ss or "00"
-        return string.format("%04d-%02d-%02dT%02d:%02d:%02dZ", tonumber(y), tonumber(m), tonumber(d), tonumber(hh), tonumber(mm), tonumber(ss))
+        return components_to_utc_iso(y, m, d, hh, mm, ss, tz_min)
     end
 
-    local y2, mon2, d2, hh2, mm2 = date_str:match("^(%d%d%d%d)%-(%a+)%-(%d%d)%s+(%d%d):(%d%d)")
+    local y2, mon2, d2, hh2, mm2, ss2 = date_str:match("^(%d%d%d%d)%-(%a+)%-(%d%d)%s+(%d%d):(%d%d):?(%d*)")
     if y2 and mon2 and d2 then
         local m_num = MONTHS[mon2:lower():sub(1, 3)]
         if m_num then
-            return string.format("%04d-%02d-%02dT%02d:%02d:00Z", tonumber(y2), m_num, tonumber(d2), tonumber(hh2), tonumber(mm2))
+            ss2 = (ss2 and ss2 ~= "") and ss2 or "00"
+            return components_to_utc_iso(y2, m_num, d2, hh2, mm2, ss2, tz_min)
         end
     end
 
-    local d3, mon3, y3, hh3, mm3 = date_str:match("^(%d%d)%-(%a+)%-(%d%d%d%d)%s+(%d%d):(%d%d)")
+    local d3, mon3, y3, hh3, mm3, ss3 = date_str:match("^(%d%d)%-(%a+)%-(%d%d%d%d)%s+(%d%d):(%d%d):?(%d*)")
     if d3 and mon3 and y3 then
         local m_num = MONTHS[mon3:lower():sub(1, 3)]
         if m_num then
-            return string.format("%04d-%02d-%02dT%02d:%02d:00Z", tonumber(y3), m_num, tonumber(d3), tonumber(hh3), tonumber(mm3))
+            ss3 = (ss3 and ss3 ~= "") and ss3 or "00"
+            return components_to_utc_iso(y3, m_num, d3, hh3, mm3, ss3, tz_min)
         end
     end
 
@@ -184,7 +222,7 @@ local function normalize_date_str(date_str, filename)
         local m_num = MONTHS[mon4:lower():sub(1, 3)]
         if m_num then
             ss4 = (ss4 and ss4 ~= "") and ss4 or "00"
-            return string.format("%04d-%02d-%02dT%02d:%02d:%02dZ", tonumber(y4), m_num, tonumber(d4), tonumber(hh4), tonumber(mm4), tonumber(ss4))
+            return components_to_utc_iso(y4, m_num, d4, hh4, mm4, ss4, tz_min)
         end
     end
 
